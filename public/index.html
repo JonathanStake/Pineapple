@@ -1,0 +1,524 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d2a22">
+<title>5-Card Pineapple</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap">
+<style>
+/* Layout: one phone per player. Every in-game screen keeps the shared board at the top like the
+   centre of a table, this player's own cards below it, and one action at the bottom. */
+:root{
+  --felt:#1c4a3d;
+  --felt-light:#2a6a55;
+  --felt-deep:#0d2a22;
+  --ink:#eef3ee;
+  --ink-muted:rgba(238,243,238,.64);
+  --ink-faint:rgba(238,243,238,.16);
+  --panel:rgba(6,24,19,.42);
+  --card:#f7f2e6;
+  --card-edge:#d8cfb8;
+  --card-ink:#1c1b1f;
+  --card-red:#b2302c;
+  --back:#7b2d2a;
+  --brass:#d7ae56;
+  --brass-ink:#2b1f08;
+  --font-display:'Young Serif', Georgia, 'Times New Roman', serif;
+  --font-ui:'Barlow', 'Helvetica Neue', Arial, sans-serif;
+  --font-card:'Barlow Condensed', 'Arial Narrow', Arial, sans-serif;
+  --bw: clamp(46px, 13vw, 72px);
+  --bgap: 6px;
+  color-scheme: dark;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+html, body { height: 100%; }
+body{
+  margin:0;
+  background: var(--felt-deep);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 16px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+.table-bg{
+  position: fixed; inset: 0; z-index: -1;
+  background: radial-gradient(ellipse 120% 85% at 50% 18%, var(--felt-light) 0%, var(--felt) 42%, var(--felt-deep) 100%);
+}
+.table-bg::after{
+  content:""; position:absolute; inset:0; opacity:.07;
+  background-image: radial-gradient(rgba(255,255,255,.9) 0.6px, transparent 0.7px);
+  background-size: 5px 5px;
+}
+.app{
+  max-width: 720px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 14px 36px;
+  min-height: 100%;
+  box-sizing: border-box;
+  display: flex; flex-direction: column;
+}
+.screen{ display:flex; flex-direction:column; gap: 20px; flex: 1; animation: fade .25s ease-out; }
+@keyframes fade{ from{ opacity:0; transform: translateY(4px) } to{ opacity:1; transform:none } }
+
+h1, h2{ font-family: var(--font-display); font-weight: 400; margin: 0; text-wrap: balance; letter-spacing: -.01em; }
+h1{ font-size: clamp(30px, 8vw, 44px); line-height: 1.08; }
+h2{ font-size: clamp(22px, 6vw, 30px); line-height: 1.15; }
+p{ margin:0; }
+.muted{ color: var(--ink-muted); }
+.label{ font-size: 12px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-muted); }
+
+.strip{ display:flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 14px; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+.strip b{ color: var(--ink); font-weight: 600; }
+
+.card{
+  --w: 64px;
+  width: var(--w); height: calc(var(--w) * 1.4);
+  border-radius: calc(var(--w) * .09);
+  background: var(--card);
+  color: var(--card-ink);
+  position: relative;
+  box-shadow: inset 0 0 0 1px var(--card-edge), 0 4px 10px rgba(0,0,0,.35);
+  font-family: var(--font-card); font-weight: 700;
+  display: grid; place-items: center;
+  user-select: none; -webkit-user-select: none;
+  flex: none; box-sizing: border-box;
+  padding: 0; border: 0; margin: 0;
+}
+.card.red{ color: var(--card-red); }
+.card .corner{ position:absolute; top: 5%; left: 7%; line-height: .9; font-size: calc(var(--w) * .27); text-align: center; }
+.card .corner small{ display:block; font-size: .82em; line-height: 1; }
+.card .corner.b{ top:auto; left:auto; bottom: 5%; right: 7%; transform: rotate(180deg); }
+.card .pip{ font-size: calc(var(--w) * .58); line-height: 1; }
+.card.back{
+  background-color: var(--back);
+  background-image:
+    repeating-linear-gradient(45deg, rgba(255,255,255,.13) 0 1.5px, transparent 1.5px 7px),
+    repeating-linear-gradient(-45deg, rgba(255,255,255,.13) 0 1.5px, transparent 1.5px 7px);
+  box-shadow: inset 0 0 0 calc(var(--w) * .07) var(--card), inset 0 0 0 calc(var(--w) * .085) var(--card-edge), 0 4px 10px rgba(0,0,0,.35);
+}
+.card.tiny{ font-size: calc(var(--w) * .5); line-height: 1; display:flex; align-items:center; justify-content:center; }
+.card.tiny small{ font-size: .75em; }
+.card.dim{ opacity: .38; }
+
+.board{ display:flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 10px 12px; border-radius: 18px; background: var(--panel); box-shadow: inset 0 0 0 1px var(--ink-faint); }
+.board-cards{ display:flex; gap: var(--bgap); }
+.board-cards > *:nth-child(4){ margin-left: 8px; }
+.board .card{ --w: var(--bw); }
+.board-labels{ display:flex; gap: var(--bgap); font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-muted); }
+.board-labels .l{ text-align:center; width: var(--bw); }
+.board-labels .l.flop{ width: calc(3 * var(--bw) + 2 * var(--bgap)); }
+.board-labels .l.turn{ margin-left: 8px; }
+
+.hand{ display:flex; justify-content:center; align-items:flex-end; padding-top: 22px; padding-bottom: 6px; min-height: 150px; }
+.hand .card{ --w: 86px; margin-left: -28px; cursor: pointer; transition: transform .18s ease, box-shadow .18s ease; }
+.hand .card:first-child{ margin-left: 0; }
+.hand .card:hover{ transform: translateY(-6px); }
+.hand .card.sel{ transform: translateY(-20px); box-shadow: 0 0 0 3px var(--brass), 0 12px 20px rgba(0,0,0,.45); z-index: 2; }
+.hand .card:focus-visible{ outline: 3px solid var(--ink); outline-offset: 3px; z-index: 3; }
+.hand.small{ min-height: 0; padding-top: 6px; }
+.hand.small .card{ --w: 66px; margin-left: 8px; cursor: default; }
+.hand.small .card:first-child{ margin-left: 0; }
+.hand.small .card:hover{ transform: none; }
+@media (min-width: 520px){ .hand .card{ --w: 104px; margin-left: 12px; } }
+
+.actions{ display:flex; flex-direction: column; gap: 10px; margin-top: auto; }
+.btn{
+  font: 600 17px/1.1 var(--font-ui); padding: 17px 22px; border-radius: 999px; border: 0;
+  background: var(--brass); color: var(--brass-ink); width: 100%; cursor: pointer;
+  transition: transform .08s ease, opacity .15s ease;
+}
+.btn:active{ transform: scale(.985); }
+.btn:disabled{ opacity: .4; cursor: default; }
+.btn.ghost{ background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--ink-faint); }
+.btn.small{ width:auto; padding: 12px 16px; font-size: 15px; flex: none; }
+.btn:focus-visible{ outline: 3px solid var(--ink); outline-offset: 2px; }
+
+.field{ display:flex; flex-direction: column; gap: 6px; }
+.field input{
+  font: 500 17px/1.2 var(--font-ui); color: var(--ink);
+  background: var(--panel); border: 0; border-radius: 12px; padding: 13px 14px;
+  box-shadow: inset 0 0 0 1px var(--ink-faint); width: 100%; box-sizing: border-box;
+}
+.field input::placeholder{ color: var(--ink-muted); opacity: .7; }
+.field input:focus{ outline: none; box-shadow: inset 0 0 0 2px var(--brass); }
+.field input.code-input{ font-family: var(--font-display); font-size: 24px; letter-spacing: .3em; text-transform: uppercase; text-align:center; }
+.row{ display:flex; gap: 8px; align-items: flex-end; }
+.row .field{ flex: 1; min-width: 0; }
+
+.section{ display:flex; flex-direction:column; gap: 12px; padding: 16px; border-radius: 18px; background: var(--panel); box-shadow: inset 0 0 0 1px var(--ink-faint); }
+.section h2{ font-size: 20px; }
+.notice{ padding: 12px 14px; border-radius: 12px; background: rgba(215,174,86,.14); box-shadow: inset 0 0 0 1px rgba(215,174,86,.45); font-size: 15px; }
+.notice.err{ background: rgba(178,48,44,.18); box-shadow: inset 0 0 0 1px rgba(178,48,44,.55); }
+
+.hero{ display:flex; flex-direction: column; gap: 12px; padding-top: 6px; }
+.deal-preview{ display:flex; gap: 6px; justify-content:center; padding: 6px 0 2px; }
+.deal-preview .card{ --w: 40px; }
+details.rules summary{ cursor:pointer; font-weight: 600; list-style: none; display:flex; align-items:center; gap: 8px; }
+details.rules summary::-webkit-details-marker{ display:none; }
+details.rules summary::before{ content:"+"; font-family: var(--font-display); color: var(--brass); font-size: 20px; line-height: 1; width: 1em; }
+details.rules[open] summary::before{ content:"–"; }
+.rules-body{ display:grid; gap: 8px; max-width: 60ch; padding-top: 10px; }
+.rules-body .step{ display:grid; grid-template-columns: 2.2em 1fr; gap: 6px; align-items: baseline; }
+.rules-body .step b{ font-family: var(--font-display); font-weight: 400; color: var(--brass); font-size: 18px; }
+
+.codebox{ display:flex; flex-direction:column; align-items:center; gap: 6px; text-align:center; }
+.code{ font-family: var(--font-display); font-size: clamp(44px, 16vw, 72px); letter-spacing: .22em; text-indent: .22em; line-height: 1; color: var(--brass); }
+.linkbox{ display:flex; gap: 8px; align-items: stretch; }
+.linkbox code{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font: 500 14px/1.3 var(--font-ui); background: var(--panel); border-radius: 12px; padding: 12px 14px; box-shadow: inset 0 0 0 1px var(--ink-faint); user-select: all; -webkit-user-select: all; display:flex; align-items:center; }
+.players{ list-style:none; margin:0; padding:0; display:grid; gap: 8px; }
+.player{ display:flex; align-items:center; gap: 10px; padding: 12px 14px; border-radius: 14px; background: var(--panel); box-shadow: inset 0 0 0 1px var(--ink-faint); font-weight: 500; }
+.player .nm{ flex:1; min-width:0; overflow:hidden; text-overflow: ellipsis; white-space: nowrap; }
+.player .st{ font-size: 14px; color: var(--ink-muted); flex: none; }
+.player.done .st{ color: var(--brass); font-weight: 600; }
+.player.away{ opacity: .6; }
+.tag{ font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; border-radius: 999px; padding: 3px 8px; box-shadow: inset 0 0 0 1px var(--ink-faint); color: var(--ink-muted); flex: none; }
+.tag.host{ background: var(--brass); color: var(--brass-ink); box-shadow: none; }
+
+.centre{ display:flex; flex-direction:column; align-items:center; text-align:center; gap: 10px; padding-top: 6px; }
+.who{ display:flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+
+.results{ list-style: none; margin:0; padding:0; display:grid; gap: 10px; }
+.result{
+  display:grid; grid-template-columns: auto 1fr; gap: 6px 16px; align-items: start;
+  padding: 14px; border-radius: 16px; background: var(--panel); box-shadow: inset 0 0 0 1px var(--ink-faint);
+}
+.result.win{ box-shadow: inset 0 0 0 2px var(--brass); }
+.result .hole{ display:flex; gap: 6px; grid-row: 1 / span 4; }
+.result .hole .card{ --w: 58px; }
+.result .name{ font-weight: 600; font-size: 17px; display:flex; align-items:center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+.badge{ font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; background: var(--brass); color: var(--brass-ink); border-radius: 999px; padding: 3px 9px; }
+.result .handname{ font-family: var(--font-display); font-size: 18px; line-height: 1.2; }
+.result .line{ display:flex; align-items:center; gap: 8px; flex-wrap: wrap; font-size: 12px; color: var(--ink-muted); }
+.result .line .card{ --w: 26px; box-shadow: inset 0 0 0 1px var(--card-edge); border-radius: 4px; }
+.result .line .mucked .card{ opacity: .45; }
+.result .mucked, .result .used{ display:flex; gap: 3px; }
+.scores{ display:flex; flex-wrap: wrap; gap: 8px 14px; font-variant-numeric: tabular-nums; font-size: 15px; }
+.scores span b{ color: var(--brass); font-weight: 600; margin-left: 5px; }
+
+@media (prefers-reduced-motion: reduce){
+  *{ transition: none !important; animation: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="table-bg" aria-hidden="true"></div>
+<main class="app" id="app"></main>
+
+<script src="engine.js"></script>
+<script>
+/* ---------- constants & identity ---------- */
+const STREETS = ['Flop','Turn','River'];
+function store(k, v){ try{ if(v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); }catch(e){} }
+function load(k){ try{ return localStorage.getItem(k) || ''; }catch(e){ return ''; } }
+function randomId(){ const u = new Uint8Array(18); crypto.getRandomValues(u); return btoa(String.fromCharCode.apply(null, u)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+let ID = load('p5-id'), TOKEN = load('p5-token');
+if(!/^[A-Za-z0-9_-]{8,64}$/.test(ID) || !/^[A-Za-z0-9_-]{8,64}$/.test(TOKEN)){ ID = randomId(); TOKEN = randomId(); store('p5-id', ID); store('p5-token', TOKEN); }
+
+/* ---------- state ---------- */
+let code = null, view = null, es = null;
+const ui = { screen:'home', name:'', code:'', selected:null, error:'', notice:'', busy:false, confirmRestart:false, copied:false, offline:false };
+
+function me(){ return view && view.players.find(p => p.id === ID) || null; }
+function playerById(id){ return view ? (view.players.find(p => p.id === id) || null) : null; }
+function isHost(){ return !!(view && view.hostId === ID); }
+function hostName(){ const h = view && playerById(view.hostId); return h ? h.name : 'the dealer'; }
+function shareLink(){ return location.origin + location.pathname + '#' + code; }
+
+/* ---------- server ---------- */
+const NO_SERVER = location.protocol === 'file:'
+  ? 'This page was opened as a file, so there is no game server behind it. Run `node server.js` in the pineapple folder and open http://localhost:3000, or open the address your host (for example Render) gave you.'
+  : 'Couldn’t reach the game server at ' + location.host + '. If you just deployed it, give it a minute and reload; if you run it yourself, check that `node server.js` is still running.';
+async function api(path, body){
+  let res;
+  try{
+    res = await fetch('/api/tables' + path, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(Object.assign({ playerId: ID, token: TOKEN }, body || {})) });
+  }catch(e){ throw new Error(NO_SERVER); }
+  let data = {}; try{ data = await res.json(); }catch(e){}
+  if(!res.ok) throw new Error(data.error || 'The table did not answer (' + res.status + ').');
+  return data;
+}
+function connect(c){
+  disconnect();
+  code = c; view = null; ui.screen = 'table'; ui.selected = null; ui.confirmRestart = false; ui.copied = false; ui.offline = false;
+  store('p5-code', c);
+  es = new EventSource('/api/tables/' + c + '/events?player=' + encodeURIComponent(ID) + '&token=' + encodeURIComponent(TOKEN));
+  es.addEventListener('state', e => { view = JSON.parse(e.data); ui.offline = false; if(ui.screen === 'table') render(); });
+  es.addEventListener('gone', e => { let d = {}; try{ d = JSON.parse(e.data); }catch(_){} disconnect(); ui.screen = 'home'; ui.notice = d.reason || 'That table is no longer open.'; ui.error = ''; render(); });
+  es.onerror = () => { ui.offline = true; if(ui.screen === 'table') render(); };
+}
+function disconnect(){ if(es){ es.close(); es = null; } code = null; view = null; store('p5-code', null); }
+
+/* ---------- actions ---------- */
+function requireName(){
+  ui.name = (ui.name || '').trim().slice(0, 18);
+  if(!ui.name){ ui.error = 'Type your name first so the table knows who you are.'; return false; }
+  store('p5-name', ui.name);
+  return true;
+}
+async function createTable(){
+  if(ui.busy || !requireName()) return;
+  ui.busy = true; ui.error = ''; ui.notice = ''; render();
+  try{ const r = await api('', { name: ui.name }); connect(r.code); }
+  catch(e){ ui.error = e.message; }
+  ui.busy = false; render();
+}
+async function joinTable(c){
+  c = String(c || '').toUpperCase().trim();
+  if(!/^[A-Z]{4}$/.test(c)){ ui.error = 'A table code is four letters.'; return false; }
+  if(!requireName()) return false;
+  await api('/' + c + '/join', { name: ui.name });
+  connect(c);
+  return true;
+}
+async function joinFromForm(){
+  if(ui.busy) return;
+  ui.busy = true; ui.error = ''; ui.notice = ''; render();
+  try{ await joinTable(ui.code); }catch(e){ ui.error = e.message; }
+  ui.busy = false; render();
+}
+async function leaveTable(){
+  const c = code, host = isHost();
+  disconnect();
+  ui.screen = 'home'; ui.error = ''; ui.notice = ''; ui.selected = null; render();
+  try{ await api('/' + c + (host ? '/close' : '/leave')); }catch(e){}
+}
+async function deal(){
+  if(ui.busy || !isHost()) return;
+  ui.busy = true; ui.error = ''; ui.confirmRestart = false; render();
+  try{ await api('/' + code + '/deal'); }catch(e){ ui.error = e.message; }
+  ui.busy = false; render();
+}
+async function discard(){
+  if(ui.busy || !view || !view.you || !ui.selected) return;
+  ui.busy = true; ui.error = ''; render();
+  try{ await api('/' + code + '/discard', { cardId: ui.selected }); ui.selected = null; }
+  catch(e){ ui.error = e.message; }
+  ui.busy = false; render();
+}
+async function copyLink(){
+  try{ await navigator.clipboard.writeText(shareLink()); ui.copied = true; render(); setTimeout(() => { ui.copied = false; render(); }, 1800); }
+  catch(e){
+    const el = document.getElementById('share-link');
+    if(el){ const r = document.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
+  }
+}
+
+/* ---------- rendering ---------- */
+const app = document.getElementById('app');
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function joinNames(list){ return list.length <= 1 ? list.join('') : list.slice(0,-1).join(', ') + ' and ' + list[list.length-1]; }
+function fmtWins(x){
+  if(Number.isInteger(x)) return String(x);
+  if(Number.isInteger(x*2)) return (x >= 1 ? Math.floor(x) : '') + '½';
+  return (Math.round(x*100)/100).toString();
+}
+function cardHTML(c, cls, tag, attrs){
+  tag = tag || 'div'; cls = cls || ''; attrs = attrs || '';
+  const red = (c.s===1 || c.s===2) ? ' red' : '';
+  const R = rankStr(c.r), S = SUITS[c.s];
+  return '<' + tag + ' class="card' + red + ' ' + cls + '" ' + attrs + ' aria-label="' + esc(RANK_NAME[c.r] + ' of ' + SUIT_NAME[c.s]) + '">' +
+    '<span class="corner" aria-hidden="true">' + R + '<small>' + S + '</small></span>' +
+    '<span class="pip" aria-hidden="true">' + S + '</span>' +
+    '<span class="corner b" aria-hidden="true">' + R + '<small>' + S + '</small></span>' +
+  '</' + tag + '>';
+}
+function tinyHTML(c){
+  const red = (c.s===1 || c.s===2) ? ' red' : '';
+  return '<span class="card tiny' + red + '" aria-label="' + esc(RANK_NAME[c.r] + ' of ' + SUIT_NAME[c.s]) + '">' + rankStr(c.r) + '<small aria-hidden="true">' + SUITS[c.s] + '</small></span>';
+}
+function backHTML(){ return '<div class="card back" aria-label="Face-down card"></div>'; }
+function boardHTML(){
+  const shown = view.board || [];
+  const cells = [];
+  for(let i=0;i<5;i++) cells.push(shown[i] ? cardHTML(shown[i]) : backHTML());
+  return '<section class="board" aria-label="Community cards"><div class="board-cards">' + cells.join('') + '</div>' +
+    '<div class="board-labels" aria-hidden="true"><span class="l flop">Flop</span><span class="l turn">Turn</span><span class="l">River</span></div></section>';
+}
+function stripHTML(){
+  const right = view.status === 'showdown' ? 'Showdown' : view.status === 'lobby' ? 'Lobby' : STREETS[view.street];
+  const hand = view.handNo ? ' · Hand <b>' + view.handNo + '</b>' : '';
+  return '<div class="strip"><span>Table <b>' + esc(code) + '</b>' + hand + '</span><span><b>' + right + '</b></span></div>';
+}
+function noticeHTML(){
+  let h = '';
+  if(ui.offline && ui.screen === 'table') h += '<div class="notice">Reconnecting to the table…</div>';
+  if(ui.error) h += '<div class="notice err" role="alert">' + esc(ui.error) + '</div>';
+  if(ui.notice) h += '<div class="notice">' + esc(ui.notice) + '</div>';
+  return h;
+}
+function rulesHTML(open){
+  return '<details class="rules"' + (open ? ' open' : '') + '><summary>How a hand plays</summary><div class="rules-body">' +
+    '<div class="step"><b>1</b><span>Everyone is dealt five cards to their own phone. The flop is turned up; the turn and river stay face down.</span></div>' +
+    '<div class="step"><b>2</b><span>Each player throws away one card. When everyone has, the turn is revealed and everyone throws away another.</span></div>' +
+    '<div class="step"><b>3</b><span>The river is revealed and everyone throws away a third card, keeping two.</span></div>' +
+    '<div class="step"><b>4</b><span>Best five-card hand from your two cards and the board wins. Ties split the hand.</span></div>' +
+  '</div></details>';
+}
+function renderHome(){
+  const preview = [{r:14,s:0},{r:13,s:1},{r:9,s:3},{r:9,s:2},{r:4,s:0}];
+  return '<div class="screen">' +
+    '<div class="hero"><h1>5-Card Pineapple</h1>' +
+      '<p class="muted">A card game for two to eight people, each on their own phone. Five cards each, three throws, best two left standing.</p>' +
+      '<div class="deal-preview" aria-hidden="true">' + preview.map(c => cardHTML(c)).join('') + '</div></div>' +
+    noticeHTML() +
+    '<div class="field"><label class="label" for="name">Your name</label><input id="name" type="text" maxlength="18" autocomplete="nickname" placeholder="What the table should call you" value="' + esc(ui.name) + '"></div>' +
+    '<div class="section"><h2>Join a table</h2><p class="muted">Type the four-letter code from the dealer’s phone.</p>' +
+      '<div class="row"><div class="field"><label class="label" for="code">Table code</label><input id="code" class="code-input" type="text" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABCD" value="' + esc(ui.code) + '"></div>' +
+      '<button type="button" class="btn small" data-act="join"' + (ui.busy ? ' disabled' : '') + '>Join</button></div></div>' +
+    '<div class="section"><h2>Start a table</h2><p class="muted">You’ll get a code and a link to send to everyone else. You deal from your phone.</p>' +
+      '<button type="button" class="btn" data-act="create"' + (ui.busy ? ' disabled' : '') + '>' + (ui.busy ? 'Setting up…' : 'Open a new table') + '</button></div>' +
+    rulesHTML(false) +
+  '</div>';
+}
+function playerRowsHTML(mode){
+  const need = (view.street || 0) + 1;
+  const list = mode === 'hand' ? view.seats.map(id => playerById(id)).filter(Boolean) : view.players;
+  return '<ul class="players">' + list.map(p => {
+    let st = '', done = false;
+    if(mode === 'hand'){ done = p.done >= need; st = done ? 'Thrown away' : 'Choosing…'; }
+    else if(view.status !== 'lobby' && !p.seated){ st = 'Next hand'; }
+    return '<li class="player' + (done ? ' done' : '') + (p.present ? '' : ' away') + '"><span class="nm">' + esc(p.name) + '</span>' +
+      (p.id === view.hostId ? '<span class="tag host">Dealer</span>' : '') +
+      (p.id === ID ? '<span class="tag">You</span>' : '') +
+      (!p.present ? '<span class="tag">Away</span>' : '') +
+      (st ? '<span class="st">' + st + '</span>' : '') +
+    '</li>';
+  }).join('') + '</ul>';
+}
+function renderLobby(){
+  const host = isHost();
+  const enough = view.players.filter(p => p.present).length >= 2;
+  return '<div class="screen">' + stripHTML() +
+    '<div class="codebox"><span class="label">Table code</span><div class="code">' + esc(code) + '</div><p class="muted">Everyone else opens the link and joins with this code.</p></div>' +
+    '<div class="linkbox"><code id="share-link">' + esc(shareLink()) + '</code><button type="button" class="btn small ghost" data-act="copy">' + (ui.copied ? 'Copied' : 'Copy link') + '</button></div>' +
+    noticeHTML() +
+    '<div><span class="label">At the table</span>' + playerRowsHTML('lobby') + '</div>' +
+    '<div class="actions">' +
+      (host
+        ? '<button type="button" class="btn" data-act="deal"' + (enough && !ui.busy ? '' : ' disabled') + '>' + (ui.busy ? 'Dealing…' : enough ? 'Deal' : 'Waiting for a second player') + '</button>'
+        : '<p class="muted" style="text-align:center">Waiting for ' + esc(hostName()) + ' to deal.</p>') +
+      '<button type="button" class="btn ghost" data-act="leave">' + (host ? 'Close table' : 'Leave table') + '</button>' +
+    '</div></div>';
+}
+function renderPlaying(){
+  const you = view.you;
+  const need = view.street + 1;
+  let body;
+  if(!you.seated){
+    body = '<div class="centre"><span class="label">' + STREETS[view.street] + '</span><h1>You’re in next hand</h1><p class="muted">This hand was dealt before you sat down.</p></div>' + playerRowsHTML('hand');
+  } else if(you.done < need){
+    const sel = you.hand.find(c => cardId(c) === ui.selected);
+    const cards = you.hand.map(c => cardHTML(c, cardId(c) === ui.selected ? 'sel' : '', 'button', 'type="button" data-act="pick" data-id="' + cardId(c) + '" aria-pressed="' + (cardId(c) === ui.selected) + '"')).join('');
+    body = '<div class="who"><h2>Your cards</h2><span class="muted">' + STREETS[view.street] + ' · keep ' + (you.hand.length - 1) + '</span></div>' +
+      '<p class="muted">Tap the card you want to throw away' + (you.hand.length === 3 ? '. The two you keep are your hand.' : '.') + '</p>' +
+      '<div class="hand" role="group" aria-label="Your cards">' + cards + '</div>' +
+      '<div class="actions"><button type="button" class="btn" data-act="discard"' + (sel && !ui.busy ? '' : ' disabled') + '>' + (ui.busy ? 'Throwing away…' : sel ? 'Throw away ' + cardText(sel) : 'Choose a card') + '</button></div>';
+  } else {
+    const waiting = view.seats.map(id => playerById(id)).filter(p => p && p.done < need).map(p => p.name);
+    const heading = waiting.length ? 'Waiting for ' + joinNames(waiting) : (view.street < 2 ? 'Revealing the ' + STREETS[view.street + 1].toLowerCase() + '…' : 'Showdown coming up…');
+    body = '<div class="who"><h2>Your cards</h2><span class="muted">' + STREETS[view.street] + (you.hand.length === 2 ? ' · final two' : ' · keeping ' + you.hand.length) + '</span></div>' +
+      '<div class="hand small" aria-label="Your cards">' + you.hand.map(c => cardHTML(c)).join('') + '</div>' +
+      '<div class="centre"><h2 aria-live="polite">' + esc(heading) + '</h2></div>' + playerRowsHTML('hand');
+  }
+  const hostTools = isHost()
+    ? (ui.confirmRestart
+        ? '<button type="button" class="btn" data-act="deal">Yes, redeal to everyone</button><button type="button" class="btn ghost" data-act="cancel-restart">Keep this hand going</button>'
+        : '<button type="button" class="btn ghost" data-act="restart">Restart hand</button>')
+    : '';
+  return '<div class="screen">' + stripHTML() + boardHTML() + noticeHTML() + body +
+    '<div class="actions">' + hostTools + '<button type="button" class="btn ghost" data-act="leave">' + (isHost() ? 'Close table' : 'Leave table') + '</button></div></div>';
+}
+function renderShowdown(){
+  const R = view.results || { rows: [], winners: [] };
+  const winnerNames = R.winners.map(id => { const r = R.rows.find(x => x.id === id); return r ? r.name : 'Someone'; });
+  const top = R.rows[0];
+  const headline = !top ? 'No hand to show' : R.winners.length > 1 ? joinNames(winnerNames) + ' split the hand' : winnerNames[0] + ' wins';
+  const rows = R.rows.map(r => {
+    const usedIds = new Set(r.used.map(cardId));
+    const isWin = R.winners.indexOf(r.id) >= 0;
+    return '<li class="result' + (isWin ? ' win' : '') + '">' +
+      '<div class="hole">' + r.hole.map(c => cardHTML(c, usedIds.has(cardId(c)) ? '' : 'dim')).join('') + '</div>' +
+      '<div class="name">' + esc(r.name) + (isWin ? '<span class="badge">' + (R.winners.length > 1 ? 'Split' : 'Winner') + '</span>' : '') + (r.id === ID ? '<span class="tag">You</span>' : '') + '</div>' +
+      '<div class="handname">' + handName(r) + '</div>' +
+      '<div class="line"><span>Best five</span><span class="used">' + r.used.map(tinyHTML).join('') + '</span></div>' +
+      '<div class="line"><span>Threw away</span><span class="mucked">' + r.mucked.map(tinyHTML).join('') + '</span></div>' +
+    '</li>';
+  }).join('');
+  const scores = view.players.map(p => '<span>' + esc(p.name) + '<b>' + fmtWins(view.wins[p.id] || 0) + '</b></span>').join('');
+  const newcomers = view.players.filter(p => !p.seated);
+  return '<div class="screen">' + stripHTML() + boardHTML() + noticeHTML() +
+    '<div class="centre"><h1>' + esc(headline) + '</h1>' + (top ? '<p class="muted">' + handName(top) + '</p>' : '') + '</div>' +
+    '<ol class="results">' + rows + '</ol>' +
+    '<div><span class="label">Hands won</span><div class="scores">' + scores + '</div></div>' +
+    (newcomers.length ? '<p class="muted">' + esc(joinNames(newcomers.map(p => p.name))) + (newcomers.length === 1 ? ' joins' : ' join') + ' next hand.</p>' : '') +
+    '<div class="actions">' +
+      (isHost()
+        ? '<button type="button" class="btn" data-act="deal"' + (ui.busy ? ' disabled' : '') + '>' + (ui.busy ? 'Dealing…' : 'Deal the next hand') + '</button>'
+        : '<p class="muted" style="text-align:center">Waiting for ' + esc(hostName()) + ' to deal the next hand.</p>') +
+      '<button type="button" class="btn ghost" data-act="leave">' + (isHost() ? 'Close table' : 'Leave table') + '</button>' +
+    '</div></div>';
+}
+function render(){
+  let html;
+  if(ui.screen === 'table'){
+    if(!view) html = '<div class="screen"><div class="hero"><h1>5-Card Pineapple</h1><p class="muted">Finding the table…</p></div>' + noticeHTML() + '</div>';
+    else if(view.status === 'lobby') html = renderLobby();
+    else if(view.status === 'playing') html = renderPlaying();
+    else html = renderShowdown();
+  } else html = renderHome();
+  const active = document.activeElement;
+  const keepId = active && app.contains(active) && active.id ? active.id : null;
+  const selStart = keepId && active.selectionStart != null ? active.selectionStart : null;
+  app.innerHTML = html;
+  if(keepId){ const el = document.getElementById(keepId); if(el){ el.focus({ preventScroll: true }); if(selStart != null && el.setSelectionRange){ try{ el.setSelectionRange(selStart, selStart); }catch(e){} } } }
+  else window.scrollTo(0, 0);
+}
+
+/* ---------- events ---------- */
+app.addEventListener('click', e => {
+  const el = e.target.closest('[data-act]');
+  if(!el) return;
+  switch(el.dataset.act){
+    case 'create': createTable(); break;
+    case 'join': joinFromForm(); break;
+    case 'copy': copyLink(); break;
+    case 'deal': deal(); break;
+    case 'leave': leaveTable(); break;
+    case 'pick': ui.selected = (ui.selected === el.dataset.id) ? null : el.dataset.id; render(); break;
+    case 'discard': discard(); break;
+    case 'restart': ui.confirmRestart = true; render(); break;
+    case 'cancel-restart': ui.confirmRestart = false; render(); break;
+  }
+});
+app.addEventListener('input', e => {
+  if(e.target.id === 'name') ui.name = e.target.value;
+  if(e.target.id === 'code'){ const v = e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0,4); if(v !== e.target.value) e.target.value = v; ui.code = v; }
+});
+app.addEventListener('keydown', e => {
+  if(e.key !== 'Enter') return;
+  if(e.target.id === 'code') joinFromForm();
+  if(e.target.id === 'name'){ const c = document.getElementById('code'); if(c) c.focus(); }
+});
+window.addEventListener('unhandledrejection', e => { ui.error = (e.reason && e.reason.message) || 'Something went wrong.'; ui.busy = false; render(); });
+
+/* ---------- boot ---------- */
+(async function boot(){
+  ui.name = load('p5-name');
+  const hashCode = (location.hash || '').replace('#', '').toUpperCase();
+  if(/^[A-Z]{4}$/.test(hashCode)) ui.code = hashCode;
+  const savedCode = load('p5-code');
+  if(!ui.code && /^[A-Z]{4}$/.test(savedCode)) ui.code = savedCode;
+  if(location.protocol === 'file:') ui.notice = NO_SERVER;
+  render();
+  if(ui.name && /^[A-Z]{4}$/.test(ui.code) && (ui.code === savedCode || hashCode === ui.code)){
+    try{ await joinTable(ui.code); }catch(e){ ui.error = hashCode === ui.code ? e.message : ''; store('p5-code', null); }
+    render();
+  }
+})();
+</script>
+</body>
+</html>

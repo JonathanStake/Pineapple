@@ -1,0 +1,13 @@
+{
+  "name": "five-card-pineapple",
+  "version": "1.0.0",
+  "private": true,
+  "description": "5-Card Pineapple: a card game for 2–8 people, each on their own phone. Plain Node server, no dependencies.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>5-Card Pineapple — Start here</title>
+<style>
+  :root{ --bg:#f6f3ea; --ink:#1f2a24; --muted:#5d6a63; --accent:#1c4a3d; --brass:#a97f2a; --panel:#fff; --line:#e1dccd; }
+  body{ margin:0; background:var(--bg); color:var(--ink); font:17px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+  main{ max-width: 760px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1{ font-size: 34px; line-height:1.1; margin: 0 0 8px; color: var(--accent); }
+  h2{ font-size: 24px; margin: 44px 0 10px; color: var(--accent); }
+  h3{ font-size: 18px; margin: 28px 0 8px; }
+  p{ margin: 10px 0; }
+  .lead{ font-size: 19px; color: var(--muted); }
+  ol.steps{ list-style:none; counter-reset: s; padding:0; margin: 16px 0; }
+  ol.steps > li{ counter-increment: s; position: relative; padding: 14px 16px 14px 60px; margin: 10px 0; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
+  ol.steps > li::before{ content: counter(s); position:absolute; left: 16px; top: 14px; width: 30px; height: 30px; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 700; display:grid; place-items:center; }
+  code, kbd{ font: 15px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: #eee9da; padding: 2px 6px; border-radius: 6px; }
+  .btnname{ font-weight: 700; }
+  .note{ border-left: 4px solid var(--brass); background: #fbf6e8; padding: 10px 14px; border-radius: 0 10px 10px 0; margin: 14px 0; }
+  .warn{ border-left-color: #b2302c; background: #fbeeed; }
+  table{ border-collapse: collapse; width: 100%; margin: 12px 0; background: var(--panel); }
+  td, th{ border: 1px solid var(--line); padding: 10px 12px; text-align:left; vertical-align: top; }
+  th{ background: #eee9da; }
+  .small{ color: var(--muted); font-size: 15px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>5-Card Pineapple</h1>
+  <p class="lead">How to put the game online so anyone can play on their own phone or computer.</p>
+
+  <div class="note warn">
+    <strong>Don't double-click <code>index.html</code>.</strong> That opens only the screen the players see, with no game behind it, and the page will tell you so. The game runs when the folder is on a web host (below) or when <code>server.js</code> is running on your computer (see the end of this page).
+  </div>
+
+  <h2>Part 1 — Put the game online (once, about 10 minutes)</h2>
+  <p>You'll use two free services: <strong>GitHub</strong> stores the files, and <strong>Render</strong> runs them and gives you a web address. Neither needs a credit card for this.</p>
+
+  <ol class="steps">
+    <li><strong>Unzip the download.</strong> You get a folder called <code>pineapple</code>. Inside it: <code>server.js</code>, <code>package.json</code>, <code>README.md</code>, <code>Dockerfile</code>, <code>render.yaml</code>, this page, and a folder called <code>public</code>.</li>
+
+    <li><strong>Create a GitHub account.</strong> Go to <a href="https://github.com/signup">github.com/signup</a> and sign up (free). Confirm your email.</li>
+
+    <li><strong>Make a new repository.</strong> Once signed in, click the <span class="btnname">+</span> in the top-right corner and choose <span class="btnname">New repository</span>. Type <code>pineapple</code> as the name. Leave everything else as it is. Click <span class="btnname">Create repository</span>.</li>
+
+    <li><strong>Upload the files.</strong> On the empty repository page, find the sentence that starts “Get started by creating a new file or <span class="btnname">uploading an existing file</span>” and click that link. Open your <code>pineapple</code> folder in Finder, select <em>everything inside it</em> (not the folder itself), and drag it onto the browser window. Wait until all the files are listed, then click the green <span class="btnname">Commit changes</span> button at the bottom.
+      <p class="small">If the <code>public</code> folder didn't come through as a folder, open it in Finder and drag <code>index.html</code> and <code>engine.js</code> in separately; when GitHub asks for a name, type <code>public/</code> before the file name.</p>
+    </li>
+
+    <li><strong>Create a Render account.</strong> Go to <a href="https://render.com">render.com</a>, click <span class="btnname">Get Started</span>, and choose <span class="btnname">Sign in with GitHub</span>. Approve the access it asks for.</li>
+
+    <li><strong>Create the web service.</strong> On your Render dashboard click <span class="btnname">New</span> (top right) → <span class="btnname">Web Service</span>. Pick your <code>pineapple</code> repository from the list (click <span class="btnname">Connect</span> next to it; if the list is empty, click “Configure account” and allow Render to see the repository).</li>
+
+    <li><strong>Fill in the form.</strong> Most of it is already right. Check these:
+      <table>
+        <tr><th>Field</th><th>What to put</th></tr>
+        <tr><td>Name</td><td>Anything, e.g. <code>pineapple</code>. It becomes part of your address.</td></tr>
+        <tr><td>Language / Runtime</td><td><code>Node</code></td></tr>
+        <tr><td>Build Command</td><td><code>npm install</code></td></tr>
+        <tr><td>Start Command</td><td><code>node server.js</code></td></tr>
+        <tr><td>Instance Type</td><td><strong>Free</strong></td></tr>
+      </table>
+      Then click <span class="btnname">Create Web Service</span> (or <span class="btnname">Deploy Web Service</span>) at the bottom.
+    </li>
+
+    <li><strong>Wait for “Live”.</strong> Render builds it for a minute or two and shows a log. When the status at the top says <strong>Live</strong>, your address is shown just under the service name: something like <code>https://pineapple-x1y2.onrender.com</code>. Open it. You should see the green table and “Open a new table”. That address is the game, permanently.</li>
+  </ol>
+
+  <h2>Part 2 — Play and share (every time)</h2>
+  <ol class="steps">
+    <li>Open your Render address on your phone or computer. Type your name and tap <span class="btnname">Open a new table</span>.</li>
+    <li>You'll see a four-letter table code and a <span class="btnname">Copy link</span> button. Tap it and send the link to the other players any way you like (text message, WhatsApp, Slack, email). The link already contains the code.</li>
+    <li>Each player opens the link on their own phone or computer, types their name and taps <span class="btnname">Join</span>. They appear in your lobby as they arrive. Nobody needs an account or an app.</li>
+    <li>When everyone's there, tap <span class="btnname">Deal</span>. Everyone gets five cards that only they can see; throw away one card each on the flop, turn and river; the showdown shows every hand and keeps the score. Tap <span class="btnname">Deal the next hand</span> to keep going.</li>
+  </ol>
+  <p>Someone who arrives mid-hand waits and is dealt in next hand. If you leave, the dealer's job passes to the next player. If a phone loses signal or the page is reloaded, it comes back to the same seat with the same cards.</p>
+
+  <h2>If something doesn't look right</h2>
+  <table>
+    <tr><th>What you see</th><th>What it means</th></tr>
+    <tr><td>“This page was opened as a file…”</td><td>You double-clicked <code>index.html</code>. Use your Render address instead (Part 1, step 8).</td></tr>
+    <tr><td>“Couldn't reach the game server…” or “failed to fetch”</td><td>The server isn't running at that address. On Render, check the service shows <strong>Live</strong> and the Start Command is exactly <code>node server.js</code>.</td></tr>
+    <tr><td>The address takes 30–60 seconds to load</td><td>Normal on Render's free plan: the server naps after 15 minutes with nobody connected and wakes on the first visit. Tables that were open before a nap are gone; open a new one.</td></tr>
+    <tr><td>“No open table has the code…”</td><td>The table was closed, or the server restarted. The dealer opens a new table and shares the new link.</td></tr>
+    <tr><td>Render says the build failed</td><td>Open the service's Settings and check Runtime is Node, Build Command <code>npm install</code>, Start Command <code>node server.js</code>. Then click <span class="btnname">Manual Deploy</span> → <span class="btnname">Deploy latest commit</span>.</td></tr>
+  </table>
+
+  <h2>Alternative — run it on your own Mac (same Wi‑Fi only)</h2>
+  <p>Good for testing, or for a room where everyone is on the same Wi‑Fi. Players elsewhere can't reach it this way.</p>
+  <ol class="steps">
+    <li>Install Node if you don't have it: <a href="https://nodejs.org">nodejs.org</a>, the “LTS” download, then run the installer.</li>
+    <li>Open <strong>Terminal</strong> (in Applications → Utilities, or search for it with Spotlight).</li>
+    <li>Type <code>cd </code> (with a space after it), drag the <code>pineapple</code> folder from Finder into the Terminal window, and press <kbd>Return</kbd>.</li>
+    <li>Type <code>node server.js</code> and press <kbd>Return</kbd>. It replies “5-Card Pineapple is listening on port 3000”. Leave this window open while you play.</li>
+    <li>On your Mac, open <a href="http://localhost:3000">http://localhost:3000</a>. On other phones on the same Wi‑Fi, open <code>http://</code> followed by your Mac's IP address and <code>:3000</code>, for example <code>http://192.168.1.23:3000</code>. Your IP address is in System Settings → Wi‑Fi → Details.</li>
+  </ol>
+  <p class="small">Over a plain <code>http://</code> address the Copy link button may not reach the clipboard; the link is still shown so you can select and copy it by hand.</p>
+</main>
+</body>
+</html>

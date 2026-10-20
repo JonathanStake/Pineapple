@@ -1,0 +1,12 @@
+# Render blueprint: in Render, choose New → Blueprint and point it at this repo.
+services:
+  - type: web
+    name: five-card-pineapple
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
